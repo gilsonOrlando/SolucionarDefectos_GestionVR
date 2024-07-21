@@ -1,40 +1,63 @@
-const express = require('express')
-const Auth = require('../middlewares');
-const controller = require('../controllers/pdfs')
-const router = express.Router()
+const mongoose = require('mongoose');
+const model = require('../models/pdfs');
+
+const parseId = (id) => mongoose.Types.ObjectId(id);
+
+// Función auxiliar para manejar las respuestas
+const handleResponse = (res) => (err, docs) => {
+    if (err) {
+        res.status(500).send({ error: 'Internal Server Error' });
+    } else {
+        res.send({ items: docs });
+    }
+};
+
+// Función auxiliar para manejar errores específicos
+const handleError = (res, statusCode, message) => {
+    res.status(statusCode).send({ error: message });
+};
+
 /**
- * Ruta: /user GET
+ * Obtener DATA de USUARIOS
  */
-router.get(
-    `/`,
-    controller.getData
-)
+exports.getData = (req, res) => {
+    model.find({}, handleResponse(res));
+};
+
 /**
- * Ruta: /user GET
+ * Obtener un solo USUARIO
  */
-router.get(
-    `/:id`,
-    controller.getSingle
-)
+exports.getSingle = (req, res) => {
+    model.findOne({ _id: parseId(req.params.id) }, handleResponse(res));
+};
+
 /**
- * Ruta: /user GET
+ * Actualizar datos del administrativo
  */
-router.post(
-    `/`,Auth.verifyToken,
-    controller.insertData
-)
+exports.updateSingle = (req, res) => {
+    const { id } = req.params;
+    const body = req.body;
+    model.updateOne({ _id: parseId(id) }, body, handleResponse(res));
+};
+
 /**
- * Ruta: /user GET
+ * Insertar DATA de USUARIOS
  */
-router.put(
-    `/:id`,Auth.verifyToken,
-    controller.updateSingle
-)
+exports.insertData = (req, res) => {
+    const data = req.body;
+    model.create(data, (err, docs) => {
+        if (err) {
+            handleError(res, 422, 'Error al insertar datos');
+        } else {
+            res.send({ data: docs });
+        }
+    });
+};
+
 /**
- * Ruta: /user GET
+ * Eliminar DATA de USUARIOS
  */
-router.delete(
-    `/:id`,Auth.verifyToken,
-    controller.deleteSingle
-)
-module.exports = router
+exports.deleteSingle = (req, res) => {
+    const { id } = req.params;
+    model.deleteOne({ _id: parseId(id) }, handleResponse(res));
+};
