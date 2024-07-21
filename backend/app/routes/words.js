@@ -1,40 +1,83 @@
-const express = require('express')
-const Auth = require('../middlewares');
-const controller = require('../controllers/words')
-const router = express.Router()
+const mongoose = require('mongoose');
+const model = require('../models/words');
+
+const options = {
+    page: 1,
+    limit: 3
+};
+
+const parseId = (id) => {
+    return mongoose.Types.ObjectId(id);
+};
+
+const handleResponse = (res, data) => {
+    res.send({ items: data });
+};
+
+const handleError = (res, error) => {
+    res.status(422).send({ error: 'Error', details: error });
+};
+
 /**
- * Ruta: /user GET
+ * Obtener DATA de USUARIOS
  */
-router.get(
-    `/`,
-    controller.getData
-)
+exports.getData = (req, res) => {
+    model.find({}, (err, docs) => {
+        if (err) {
+            return handleError(res, err);
+        }
+        handleResponse(res, docs);
+    });
+};
+
 /**
- * Ruta: /user GET
+ * Obtener un solo USUARIO
  */
-router.get(
-    `/:id`,
-    controller.getSingle
-)
+exports.getSingle = (req, res) => {
+    model.findOne({ _id: parseId(req.params.id) }, (err, doc) => {
+        if (err) {
+            return handleError(res, err);
+        }
+        handleResponse(res, doc);
+    });
+};
+
 /**
- * Ruta: /user GET
+ * Actualizar un solo USUARIO
  */
-router.post(
-    `/`,Auth.verifyToken,
-    controller.insertData
-)
+exports.updateSingle = (req, res) => {
+    const { id } = req.params;
+    const body = req.body;
+    model.updateOne({ _id: parseId(id) }, body, (err, result) => {
+        if (err) {
+            return handleError(res, err);
+        }
+        handleResponse(res, result);
+    });
+};
+
 /**
- * Ruta: /user GET
+ * Insertar DATA de USUARIOS
  */
-router.put(
-    `/:id`,Auth.verifyToken,
-    controller.updateSingle
-)
+exports.insertData = (req, res) => {
+    const data = req.body;
+    model.create(data, (err, doc) => {
+        if (err) {
+            return handleError(res, err);
+        }
+        res.send({ data: doc });
+    });
+};
+
 /**
- * Ruta: /user GET
+ * Eliminar un solo USUARIO
  */
-router.delete(
-    `/:id`,Auth.verifyToken,
-    controller.deleteSingle
-)
-module.exports = router
+exports.deleteSingle = (req, res) => {
+    const { id } = req.params;
+    model.deleteOne({ _id: parseId(id) }, (err, result) => {
+        if (err) {
+            return handleError(res, err);
+        }
+        handleResponse(res, result);
+    });
+};
