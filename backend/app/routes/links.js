@@ -1,40 +1,53 @@
-const express = require('express')
-const Auth = require('../middlewares');
-const controller = require('../controllers/links')
-const router = express.Router()
+const mongoose = require('mongoose');
+const model = require('../models/links');
+
+// Función para convertir el ID
+const parseId = (id) => mongoose.Types.ObjectId(id);
+
+// Función auxiliar para manejar las respuestas
+const handleResponse = (res, successMessage = 'Success', errorMessage = 'Internal Server Error', statusCode = 500) => (err, docs) => {
+    if (err) {
+        res.status(statusCode).send({ error: errorMessage });
+    } else {
+        res.send({ message: successMessage, items: docs });
+    }
+};
+
 /**
- * Ruta: /user GET
+ * Obtener DATA de USUARIOS
  */
-router.get(
-    `/`,
-    controller.getData
-)
+exports.getData = (req, res) => {
+    model.find({}, handleResponse(res, 'Data retrieved successfully'));
+};
+
 /**
- * Ruta: /user GET
+ * Obtener DATA de un USUARIO específico
  */
-router.get(
-    `/:id`,
-    controller.getSingle
-)
+exports.getSingle = (req, res) => {
+    model.findOne({ _id: parseId(req.params.id) }, handleResponse(res, 'User retrieved successfully'));
+};
+
 /**
- * Ruta: /user GET
+ * Actualizar DATA de un USUARIO específico
  */
-router.post(
-    `/`,Auth.verifyToken,
-    controller.insertData
-)
+exports.updateSingle = (req, res) => {
+    const { id } = req.params;
+    const body = req.body;
+    model.updateOne({ _id: parseId(id) }, body, handleResponse(res, 'User updated successfully', 'Error updating user', 422));
+};
+
 /**
- * Ruta: /user GET
+ * Insertar DATA de USUARIOS
  */
-router.put(
-    `/:id`,Auth.verifyToken,
-    controller.updateSingle
-)
+exports.insertData = (req, res) => {
+    const data = req.body;
+    model.create(data, handleResponse(res, 'User created successfully', 'Error creating user', 422));
+};
+
 /**
- * Ruta: /user GET
+ * Eliminar DATA de un USUARIO específico
  */
-router.delete(
-    `/:id`,Auth.verifyToken,
-    controller.deleteSingle
-)
-module.exports = router
+exports.deleteSingle = (req, res) => {
+    const { id } = req.params;
+    model.deleteOne({ _id: parseId(id) }, handleResponse(res, 'User deleted successfully'));
+};
